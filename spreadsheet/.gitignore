@@ -1,4 +1,5 @@
 *.json
+password.txt
 domain_list.csv
 img/
 data/
