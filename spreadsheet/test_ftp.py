@@ -8,6 +8,7 @@ import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 import pickle
 import numpy as np
+import pandas as pd
 
 
 class ftp_connector():
@@ -51,11 +52,13 @@ class ftp_connector():
         rankingsite_list = []
         with FTP(self.ftp_server, self.account, self.password) as ftp:
             for fname in ftp.nlst(domain):
+                
                 if "{}/{}".format(fname, self.data_csv) in ftp.nlst(fname):
                     rankingsite_list += [fname.split("/")[1]]
 
         return rankingsite_list
-        
+
+
 
     def get_subdir(self, domain):
         # regex = re.compile("^" + domain + "*")
@@ -66,23 +69,14 @@ class ftp_connector():
 
         return subdir
             
-            
+    
     
 class ftp_handler():
     def __init__(self):
-        self.connector_list = [
-            ftp_connector("ftp.seitai-hikaku.lolipop.jp", "lolipop.jp-seitai-hikaku", "h36yyu"),
-            ftp_connector("ftp.site-ranking.lolipop.jp", "lolipop.jp-site-ranking", "V7k9c591"),
-            ftp_connector("ftp.satellite-rank.main.jp", "main.jp-satellite-rank", "hMGCz3e54k4E"),
-            ftp_connector("ftp.satellite-site.main.jp", "main.jp-satellite-site", "EmUqTei5"),
-            ftp_connector("ftp.aqua-sb.main.jp", "main.jp-aqua-sb", "EChiEVXw"),
-            ftp_connector("ftp.g-sb.main.jp", "main.jp-g-sb", "3jkkL6Zv"),
-            ftp_connector("ftp.kn-sb.main.jp", "main.jp-kn-sb", "h4FrK4cJ"),
-            ftp_connector("ftp.sf-sb.main.jp", "main.jp-sf-sb", "aJx3qzD8"),
-            ftp_connector("ftp.comix-sb.main.jp", "main.jp-comix-sb", "Af5e7j46"),
-            ftp_connector("ftp.cosmetics-sb.main.jp", "main.jp-cosmetics-sb", "e5Y7d2An"),
-            ftp_connector("ftp.trusty-sb.main.jp", "main.jp-trusty-sb", "9aNy3wde"),
-            ftp_connector("ftp.fs-sb.main.jp", "main.jp-fs-sb", "Fy2mb6aj"),]
+        self.connector_list = []
+        ftp_list = np.asarray(pd.read_csv("domain_list.csv", header=None))
+        for row in ftp_list:
+            self.connector_list += [ftp_connector(row[0].strip(), row[1].strip(), row[2].strip())]
         
         for connector in self.connector_list:
             print(connector.ftp_server)
@@ -111,7 +105,24 @@ class ftp_handler():
         for connector in self.connector_list:
             subdir += connector.get_subdir(domain)
         return subdir
-            
+
+    def print_subdir_list(self):
+        all_list = []
+        for connector in self.connector_list:
+            all_list += connector.data_csv_site_list
+
+        all_list.sort()
+
+        print("* {}".format(all_list[0]))
+        for i in range(1, len(all_list)):
+            if all_list[i - 1].split(".")[0] == all_list[i].split(".")[0]:
+                print("** {}".format(all_list[i]))
+            else:
+                print("")
+                print("* {}".format(all_list[i]))
+
+
+    
 
 class spreadsheet_connector():
 
@@ -192,6 +203,34 @@ def check_subdir_list(ftp_handler, sh_connector):
         #     print("domain : {}".format(domain))
 
 
+def print_subdir_list(ftp_handler, sh_connector):
+    """
+    スプレッドシートで×になってないサイトで、検索機能を持っているものを出力する
+    """
+    all_list = []
+    admvs_list = sh.get_admvs_list()
+    domain_list = sh_connector.get_domain_list()
+
+    subdir_list = []
+    
+    for connector in ftp_handler.connector_list:
+        for f in connector.data_csv_site_list:
+            domain = f.split("/")[0]
+            if domain in domain_list:
+                if not admvs_list[list(domain_list).index(domain)] == "x":
+                   subdir_list += [f]
+                   
+    subdir_list.sort()
+
+    print("* {}".format(subdir_list[0]))
+    for i in range(1, len(subdir_list)):
+        if subdir_list[i - 1].split(".")[0] == subdir_list[i].split(".")[0]:
+            print("** {}".format(subdir_list[i]))
+        else:
+            print("")
+            print("* {}".format(subdir_list[i]))
+        
+
 if __name__ == "__main__":
     ftp_filename = "data/ftphandler.pickle"
 
@@ -209,8 +248,11 @@ if __name__ == "__main__":
 
     # check_domain_list(handler, sh)
 
-    check_subdir_list(handler, sh)
-    
+    # check_subdir_list(handler, sh)
+
+    # handler.print_subdir_list()
+
+    print_subdir_list(handler, sh)
     # print(sh.all_value[0])
 
     # sh.get_domain_list()
