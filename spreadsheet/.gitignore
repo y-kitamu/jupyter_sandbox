@@ -2,3 +2,4 @@
 domain_list.csv
 img/
 data/
+/__pycache__/

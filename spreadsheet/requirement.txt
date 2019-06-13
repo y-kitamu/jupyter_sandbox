@@ -2,3 +2,5 @@ gspread
 oauth2client
 numpy
 pandas
+beautifulsoup4
+lxml
