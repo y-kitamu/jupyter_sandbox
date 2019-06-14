@@ -231,6 +231,23 @@ def print_subdir_list(ftp_handler, sh_connector):
             print("* {}".format(subdir_list[i]))
         
 
+def get_ftp_server(ftp_handler):
+    domain = input()
+    if domain == "q":
+        return None
+
+    return_list = []
+    for h in ftp_handler.connector_list:
+        if domain in h.file_list:
+            print(h.ftp_server)
+            return_list = [domain, h.ftp_server]
+
+    if return_list == []:
+        print("ftp server not found")
+        return [domain, "ftp server not found"]
+    return return_list
+            
+
 if __name__ == "__main__":
     ftp_filename = "data/ftphandler.pickle"
 
@@ -246,13 +263,24 @@ if __name__ == "__main__":
     
     sh = spreadsheet_connector()
 
+    dom_list = []
+    while True:
+        domain = get_ftp_server(handler)
+        if domain == None:
+            break
+        dom_list += [domain]
+
+    dom_list.sort(key=lambda dom: dom[1])
+    for dom in dom_list:
+        print("{}, {}".format(dom[1], dom[0]))
+
     # check_domain_list(handler, sh)
 
     # check_subdir_list(handler, sh)
 
     # handler.print_subdir_list()
 
-    print_subdir_list(handler, sh)
+    # print_subdir_list(handler, sh)
     # print(sh.all_value[0])
 
     # sh.get_domain_list()
