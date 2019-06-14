@@ -14,15 +14,20 @@ class admvs_handler:
         self.index_list = []
 
         self.html = self.get_domain_list_html()
-        self.get_admvs_list()
+        # self.get_admvs_list()
     
     def get_domain_list_html(self):
         payload = {
             "csrfmiddlewaretoken": "",
-            "username": "kitamura",
-            "password": "kitamurakitamura"
+            "username": "",
+            "password": ""
         }
 
+        with open("password.txt", "r") as f:
+            payload["username"] = f.readline()
+            payload["password"] = f.readline()
+        print(payload)
+        return
         session = requests.Session()
 
         res = session.get("https://advms.sizebook.jp/accounts/login/?next=/sftpgit/site/")
