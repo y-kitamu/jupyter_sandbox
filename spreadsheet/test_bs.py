@@ -136,7 +136,7 @@ if __name__ == "__main__":
         with open(ftp_filename, 'rb') as f:
             handler = pickle.load(f)
     else:
-        handler = ftp_handler()
+        handler = FtpHandler()
 
     with open(ftp_filename, 'wb') as f:
         pickle.dump(handler, f)

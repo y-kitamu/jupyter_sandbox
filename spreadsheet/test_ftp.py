@@ -71,7 +71,7 @@ class ftp_connector():
             
     
     
-class ftp_handler():
+class FtpHandler():
     def __init__(self):
         self.connector_list = []
         ftp_list = np.asarray(pd.read_csv("domain_list.csv", header=None))
@@ -232,6 +232,9 @@ def print_subdir_list(ftp_handler, sh_connector):
         
 
 def get_ftp_server(ftp_handler):
+    """
+    ドメインを入力して、そのドメインがどの ftp サーバーにあるかを取得する。
+    """
     domain = input()
     if domain == "q":
         return None
@@ -246,33 +249,58 @@ def get_ftp_server(ftp_handler):
         print("ftp server not found")
         return [domain, "ftp server not found"]
     return return_list
+
+
+def get_domain_data_csv_list(ftp_handler):
+    """
+    ドメインを入力して、そのドメインが data.csv を持っているか、下層ページを含めて取得する。
+    """
+    domain = input()
+    if domain == "q":
+        return None
+    
+    rankingsite_list = []
+    for handler in ftp_handler:
+        if domain in handler.file_list:
+            rankingsite_list += handler.get_domain_rankingsite_list
+            
+    return rankingsite_list
             
 
 if __name__ == "__main__":
     ftp_filename = "data/ftphandler.pickle"
 
-    if Path(ftp_filename).exists():
+    if Path(ftp_filename).exists() and False:
         print("load {}".format(ftp_filename))
         with open(ftp_filename, 'rb') as f:
             handler = pickle.load(f)
     else:
-        handler = ftp_handler()
+        handler = FtpHandler()
 
     with open(ftp_filename, 'wb') as f:
         pickle.dump(handler, f)
     
     sh = spreadsheet_connector()
 
-    dom_list = []
-    while True:
-        domain = get_ftp_server(handler)
-        if domain == None:
-            break
-        dom_list += [domain]
+    is_get_domain_ftp_server = False
+    if get_domain_ftp_server:
+        dom_list = []
+        while True:
+            domain = get_ftp_server(handler)
+            if domain == None:
+                break
+            dom_list += [domain]
 
-    dom_list.sort(key=lambda dom: dom[1])
-    for dom in dom_list:
-        print("{}, {}".format(dom[1], dom[0]))
+        dom_list.sort(key=lambda dom: dom[1])
+        for dom in dom_list:
+            print("{}, {}".format(dom[1], dom[0]))
+
+    is_get_domain_data_csv_list = True
+    if is_get_domain_data_csv_list:
+        rankingsite_list = get_domain_data_csv_list(ftp_handler)
+        for f in rankingsite_list.sort():
+            print(f)
+    
 
     # check_domain_list(handler, sh)
 
