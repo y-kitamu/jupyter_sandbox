@@ -231,38 +231,48 @@ def print_subdir_list(ftp_handler, sh_connector):
             print("* {}".format(subdir_list[i]))
         
 
-def get_ftp_server(ftp_handler):
+def get_domain_ftp_server(ftp_handler, domain):
     """
-    ドメインを入力して、そのドメインがどの ftp サーバーにあるかを取得する。
+    ドメインがどの ftp サーバーにあるかを取得する
     """
-    domain = input()
-    if domain == "q":
-        return None
-
     return_list = []
     for h in ftp_handler.connector_list:
         if domain in h.file_list:
             print(h.ftp_server)
-            return_list = [domain, h.ftp_server]
+            return_list += [[domain, h.ftp_server]]
 
     if return_list == []:
         print("ftp server not found")
-        return [domain, "ftp server not found"]
+        return [[domain, "ftp server not found"]]
+    return return_list
+    
+
+def get_ftp_server(ftp_handler):
+    """
+    ドメインを入力して、そのドメインがどの ftp サーバーにあるかを取得する。
+    """
+    dom_list = []
+    while True:
+        domain = input("domain name : ")
+        dom_list += [domain]
+        if domain == "q":
+            break
+
+    return_list = []
+    for dom in dom_list:
+        return_list += get_domain_ftp_server(ftp_handler, dom)
+        
     return return_list
 
 
-def get_domain_data_csv_list(ftp_handler):
+def get_domain_data_csv_list(ftp_handler, domain):
     """
-    ドメインを入力して、そのドメインが data.csv を持っているか、下層ページを含めて取得する。
+    ドメインが data.csv を持っているか、下層ページを含めて取得する。
     """
-    domain = input()
-    if domain == "q":
-        return None
-    
     rankingsite_list = []
-    for handler in ftp_handler:
+    for handler in ftp_handler.connector_list:
         if domain in handler.file_list:
-            rankingsite_list += handler.get_domain_rankingsite_list
+            rankingsite_list += handler.get_domain_rankingsite_list(domain)
             
     return rankingsite_list
             
@@ -282,25 +292,33 @@ if __name__ == "__main__":
     
     sh = spreadsheet_connector()
 
-    is_get_domain_ftp_server = False
-    if get_domain_ftp_server:
-        dom_list = []
-        while True:
-            domain = get_ftp_server(handler)
-            if domain == None:
-                break
-            dom_list += [domain]
+    is_get_domain_ftp_server = True
+    if is_get_domain_ftp_server:
+        
+        dom_list = get_ftp_server(handler)
 
-        dom_list.sort(key=lambda dom: dom[1])
+        dom_list.sort(key=lambda dom : dom[0])
+        # print(dom_list)
         for dom in dom_list:
-            print("{}, {}".format(dom[1], dom[0]))
+            print("{}, {}".format(dom[0], dom[1]))
 
-    is_get_domain_data_csv_list = True
+    is_get_domain_data_csv_list = False
     if is_get_domain_data_csv_list:
-        rankingsite_list = get_domain_data_csv_list(ftp_handler)
-        for f in rankingsite_list.sort():
-            print(f)
+        while True:
+            domain = input("input domain name : ")
+            if domain == "q":
+                break
     
+            domain_server = get_domain_ftp_server(handler, domain)
+            if domain_server[0] == None:
+                continue
+            
+            rankingsite_list = get_domain_data_csv_list(handler, domain)
+            if  rankingsite_list == []:
+                print("no rankingsite")
+                continue
+            for f in rankingsite_list.sort():
+                print(f)
 
     # check_domain_list(handler, sh)
 
