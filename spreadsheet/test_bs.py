@@ -26,8 +26,6 @@ class admvs_handler:
         with open("password.txt", "r") as f:
             payload["username"] = f.readline()
             payload["password"] = f.readline()
-        print(payload)
-        return
         session = requests.Session()
 
         res = session.get("https://advms.sizebook.jp/accounts/login/?next=/sftpgit/site/")
