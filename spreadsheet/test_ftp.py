@@ -280,7 +280,7 @@ def get_domain_data_csv_list(ftp_handler, domain):
 if __name__ == "__main__":
     ftp_filename = "data/ftphandler.pickle"
 
-    if Path(ftp_filename).exists() and False:
+    if Path(ftp_filename).exists():
         print("load {}".format(ftp_filename))
         with open(ftp_filename, 'rb') as f:
             handler = pickle.load(f)
