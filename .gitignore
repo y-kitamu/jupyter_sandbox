@@ -1,3 +1,4 @@
 image/
 sonogym/
 .ipynb_checkpoints/
+__pycache__
