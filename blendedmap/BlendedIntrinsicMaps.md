@@ -61,7 +61,7 @@ extended complex plane に conformally に写す。(これによって、3d の�
 conformal map のセット $\left\{m_i \right\}_{i = 1}^K$ を生成する。
 $K = _{\mid P_1 \mid}C_3 \cdot _{\mid P_2 \mid}C_3 \cdot 6$ となる。
 
-## Defining COnfidence Weights : $\left\{ c_i(p) \right\}$
+## Defining Confidence Weights : $\left\{ c_i(p) \right\}$
 次のステップでは confidence value $c_i(p)$ を計算する。
 distortion の計算方法には様々なものが考えられるが、ここでは、isometyr からの乖離を推定する。
 
@@ -75,4 +75,81 @@ $$
 計算の効率性のために $c_i(p)$ の計算に用いる点群として 256 点の等間隔に分布した点群 $P_{even}$ を用いる。
 [Eldar et al. 1997]
 
-## Finding COnsistency Weights : $\left\{ w_i \right\}_{i = 1}^{K}$
+## Finding Consistency Weights : $\left\{ w_i \right\}_{i = 1}^{K}$
+
+次のステップでは、consistency weights $\left\{w_i \right\}_{i = 1}^K$ を決定する。
+ねじれが小さくなるようなものの重みを大きくして、ねじれが大きくなるようなものの重みを 0 にしたい。
+
+### Objective Function
+次の目的関数を最大化するように、$\boldsymbol{w} = \left\{ w_i \right\}_{i=1}^{K}$。
+
+$$
+    E_{M_1} (\boldsymbol{w}) = \sum_{i=1}^K \sum_{j=1}^K w_i w_j \int_{p \in M_1} S_{i,j}(p) c_i(p) c_j(p) dA(p) \\
+    \mathrm{subject to} \ \ \sum_{i=1}^K w_i^2 = 1
+$$
+
+$c_i, c_j$ は confidence value、$S_{i, j}(p) : M_1 \to \mathbb{R}$ は２つの対応関係の一貫性を表す。
+ここでは、投影した点同士の距離 (geodesic distance) の逆相関として、次のように定義する。
+
+$$
+S_{i,j} (p) = \exp \left( - \frac{d_{M_2}(m_i(p), m_j(p))}{\sigma^2} \right)
+$$
+
+多様体上では次のように変形すると効率的に $S_{i, j}$ を計算できる。
+
+$$
+S_{i,j} (p) = \exp \left( - \frac{d_{M_1} (p, m_i^{-1}(m_j(p)))}{\sigma^2} \right)
+$$
+
+
+### Optimizing for map consistency weights
+
+上の最適化問題を解く方法を考える。
+次のような行列 $\boldsymbol{S}$ を考える。
+
+$$
+    \boldsymbol{S}_{i, j} = \int_{M_1} c_i(p) c_j(p) S_{i,j}(p) dA(p)
+$$
+
+すると、最適化問題は次のように書ける。
+
+$$
+E_{M_1} (\boldsymbol{w}) = \boldsymbol{w}^T \boldsymbol{S} \boldsymbol{w}, \ \ s.t. \ \ \mid\mid \boldsymbol{w} \mid\mid_2 = 1
+$$
+
+$S$ は対称行列なので、最大固有値の固有ベクトルが最適解になる。
+(Perron-Frobenius の定理から最適解 $\boldsymbol{w}$ はすべての要素で一定の符号を持つので、正の値を選ぶことができる。)
+
+このようにして、最適解が計算できるが、２つの問題がある。
+- 行列 $\boldsymbol{S}$ が大きくなってしまうこと
+- near-isometry な解の候補が２つ以上存在する場合
+
+#### Computing the Blending Matrix
+
+$S$ の計算コストは高い。
+$S$ はスパースな行列になる。
+$S$ のある要素が 0 に近い値をとるかは、簡単に調べることができる。
+conformal map を計算する 3 点のうち 2 点が共通していて、残りの１点が、同じ点が異なる点に移動していないものを選択して、計算する。
+
+#### Processing Eigenvectors
+大きい固有値をとる固有ベクトルが複数存在する場合がある。
+このときは、inconsistent な対応関係が混ざることを避けるために、
+次のようなステップで consistent weight vector $\boldsymbol{w}_1, ,,,, \boldsymbol{w}_n$ を計算する。
+
+まず、最大固有値の 75 ％以上の固有値を持つ固有ベクトルを選ぶ。
+次に、consistent weight vector $\boldsymbol{w}_1, ,,,, \boldsymbol{w}_n$ を構築する。
+conformal map を $G_1, ,,,, G_n$ のグループに分割する。
+固有ベクトルの要素の値の大きい順に上位 25 ％の conformal map を選ぶ。
+まず最初の conformal map を $G_1$ に追加する。
+conflict がないかを確認して、ない場合は $G_1$ にある場合は,次の $G_2$ に追加していく。
+$\boldsymbol{w}$ の各要素に $\{0, 1\}$ の重み付けをして、conflict な map を取り除く。
+
+このようにして作成した各 $w$ を用いて、最終的な blend map を生成する。
+このとき、
+
+$$
+    f = \mathrm{arg}\min_{\{f_j\}_{j = 1}^n} \int_{M_1} c_{f_j} (p) dA(p)
+$$
+
+が最小になるような、$w$ を選ぶ。
+

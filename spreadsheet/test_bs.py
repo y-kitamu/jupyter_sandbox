@@ -135,8 +135,8 @@ def get_domain_list(admvs):
     all_list, csv_exist_list, csv_imported_list = admvs.get_admvs_list()
 
     all_list.sort()
-    for l in all_list:
-        print(l)
+    # for l in all_list:
+    #     print(l)
     
     domain_list = [all_list[0]]
     sub_site_list = [all_list[0]]
@@ -149,12 +149,12 @@ def get_domain_list(admvs):
             # print("* {}".format(sub_site_list[0]))
             # for i in range(1, len(sub_site_list)):
             #     print("** {}".format(sub_site_list[i]))
-            print("domain : {}", all_list[i])
+            # print("domain : {}".format(all_list[i]))
             domain_list += [all_list[i]]
             sub_site_list = [all_list[i]]
 
-    for d in domain_list:
-        print("* {}".format(d))
+    # for d in domain_list:
+    #     print("* {}".format(d))
 
     print("domain num : {}, all admvs num : {}".format(len(domain_list), len(all_list)))
 
@@ -176,7 +176,7 @@ def get_flaged_site_num_impl(all_list, flag_list):
         is_counted = True
         site_list = [merged_list[0][0]]
 
-    print(len(merged_list))
+    # print(len(merged_list))
     for i in range(1, len(merged_list)):
         all_count += 1 if merged_list[i][1] == "True" else 0
         if merged_list[i - 1][0].split(".")[0] == merged_list[i][0].split(".")[0]:
@@ -196,8 +196,11 @@ def get_flaged_site_num_impl(all_list, flag_list):
 def get_flaged_site_num(admvs):
     admvs.get_admvs_list()
 
+    print("csv exist list num")
     get_flaged_site_num_impl(admvs.domain_list, admvs.csv_exist_list)
+    print("csv imported num")
     get_flaged_site_num_impl(admvs.domain_list, admvs.csv_imported_list)
+    print("csv synced num")
     get_flaged_site_num_impl(admvs.domain_list, admvs.csv_synced_list)
     
     
@@ -217,7 +220,7 @@ if __name__ == "__main__":
     
     # sh = spreadsheet_connector()
 
-    get_domain_list(admvs)
+    # get_domain_list(admvs)
     get_flaged_site_num(admvs)
     
     # import re
