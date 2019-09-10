@@ -15,62 +15,113 @@ class admvs_handler:
         self.csv_synced_list = []
         self.index_list = []
 
-        self.html = self.get_domain_list_html()
-        # self.get_admvs_list()
-    
-    def get_domain_list_html(self):
-        payload = {
+        # self.session = self.create_session()
+        self.create_session()
+
+        self.domain_list_html = self.get_html("https://advms.sizebook.jp/sftpgit/site/")
+        self.client_list_html = self.get_html("https://advms.sizebook.jp/client/")
+        self.get_admvs_list()
+
+    def create_session(self):
+        self.payload = {
             "csrfmiddlewaretoken": "",
             "username": "",
             "password": ""
         }
 
         with open("password.txt", "r") as f:
-            payload["username"] = f.readline().strip()
-            payload["password"] = f.readline().strip()
+            self.payload["username"] = f.readline().strip()
+            self.payload["password"] = f.readline().strip()
 
-        session = requests.Session()
-
-        res = session.get("https://advms.sizebook.jp/accounts/login/?next=/sftpgit/site/")
+        self.session = requests.Session()
+        res = self.session.get("https://advms.sizebook.jp/accounts/login/?next=/sftpgit/site/")
         soup = BeautifulSoup(res.text, "lxml")
-        payload["csrfmiddlewaretoken"] = soup.find(attrs={"name": "csrfmiddlewaretoken"}).get("value")
-        print("payload : {}".format(payload["csrfmiddlewaretoken"]))
+        self.payload["csrfmiddlewaretoken"] = soup.find(attrs={"name": "csrfmiddlewaretoken"}).get("value")
+        print("payload : {}".format(self.payload["csrfmiddlewaretoken"]))
+        res = self.session.post("https://advms.sizebook.jp/accounts/login/", data=self.payload)
+        res.raise_for_status()
 
-        res = session.post("https://advms.sizebook.jp/accounts/login/?next=/sftpgit/site/", data=payload)
+    def get_html(self, url):
+        res = self.session.get(url)
         res.raise_for_status()
         return res.text
-
-    def get_admvs_list(self):
-        self.domain_list = []
-        self.csv_exist_list = []
-        self.csv_imported_list = []
-        self.csv_synced_list = []
-        self.index_list = []
-        
-        soup = BeautifulSoup(self.html, "lxml")
-
+    
+    def get_table_head_and_body(self, html):
+        soup = BeautifulSoup(html, "lxml")
         table = soup.find(attrs={"id": "data_table"})
         thead = table.find("thead")
         tbody = table.find("tbody")
 
-        header_list = [th.get_text()  for th in table.findAll("th")]
+        return thead, tbody
+
+    def get_table_list(self, tbody, index_list):
+        list_num = len(index_list)
+        table_list = [[] for _ in range(list_num)]
+        
+        for tr in tbody.findAll("tr"):
+            td_list = [td.get_text() for td in tr.findAll("td")]
+            for i in range(list_num):
+                table_list[i] += [td_list[index_list[i]]]
+
+        return table_list
+    
+    def get_admvs_list(self):
+        thead, tbody = self.get_table_head_and_body(self.domain_list_html)
+    
+        header_list = [th.get_text()  for th in thead.findAll("th")]
         idx_idx = header_list.index("#")
         name_idx = header_list.index("名前")
         csv_exist_idx = header_list.index("検索管理機能有効")
         csv_imported_idx = header_list.index("商品データ登録済み")
         csv_synced_idx = header_list.index("data.csv同期済み")
+        index_list = [idx_idx, name_idx, csv_exist_idx, csv_imported_idx, csv_synced_idx]
 
-        # table_data = [[ for td in tr.findAll("t")] for tr in tbody.findAll("tr")]
-        for tr in tbody.findAll("tr"):
-            td_list = [td.get_text() for td in tr.findAll("td")]
-            self.index_list += [int(td_list[idx_idx])]
-            self.domain_list += [td_list[name_idx]]
-
-            self.csv_exist_list += [True] if td_list[csv_exist_idx] == "True" else [False]
-            self.csv_imported_list += [True] if td_list[csv_imported_idx] == "True" else [False] 
-            self.csv_synced_list += [True] if td_list[csv_synced_idx] == "True" else [False]
-
+        self.index_list, self.domain_list, self.csv_exist_list, self.csv_imported_list, self.csv_synced_list =\
+            self.get_table_list(tbody, index_list)
+        
         return self.domain_list, self.csv_exist_list, self.csv_imported_list
+
+    def get_client_list(self):
+        thead, tbody = self.get_table_head_and_body(self.client_list_html)
+        header_list = [th.get_text() for th in thead.findAll("th")]
+
+        pk_idx = header_list.index("#")
+        name_idx = header_list.index("名前")
+
+        pk_list, name_list = self.get_table_list(tbody, [pk_idx, name_idx])
+
+        return pk_list, name_list
+
+    def get_multi_report_list(self, pk):
+        html = self.get_html("https://advms.sizebook.jp/client/{}/multireport".format(pk))
+        thead, tbody = self.get_table_head_and_body(html)
+        header_list = [th.get_text() for th in thead.findAll(["th", "td"])]
+        # print("header_list : {}".format(header_list))
+        table_rows = tbody.findAll("tr")
+        # print(len(table_rows))
+        if len(table_rows) == 0:
+            return [], []
+
+        name_idx = header_list.index("名前")
+        activate_idx = header_list.index("有効／無効")
+        # print("{}, {}".format(name_idx, activate_idx))
+        name_list, activate_list = self.get_table_list(tbody, [name_idx, activate_idx])
+
+        return name_list, activate_list
+
+    def get_pakurepo_list(self, pk):
+        html = self.get_html("https://advms.sizebook.jp/client/{}/pakurepo".format(pk))
+        thead, tbody = self.get_table_head_and_body(html)
+        header_list = [th.get_text() for th in thead.findAll("th")]
+
+        table_rows = tbody.findAll("tr")
+
+        if len(table_rows) == 0:
+            return []
+
+        name_idx = header_list.index("名前")
+        name_list = self.get_table_list(tbody, [name_idx])
+        return name_list
 
 
 def get_not_imported_list(ftp, sh, admvs, min_idx=0):
@@ -202,7 +253,6 @@ def get_flaged_site_num(admvs):
     get_flaged_site_num_impl(admvs.domain_list, admvs.csv_imported_list)
     print("csv synced num")
     get_flaged_site_num_impl(admvs.domain_list, admvs.csv_synced_list)
-    
     
     
 if __name__ == "__main__":

@@ -121,7 +121,6 @@ class FtpHandler():
                 print("")
                 print("* {}".format(all_list[i]))
 
-
     
 
 class spreadsheet_connector():
@@ -254,9 +253,9 @@ def get_ftp_server(ftp_handler):
     dom_list = []
     while True:
         domain = input("domain name : ")
-        dom_list += [domain]
         if domain == "q":
             break
+        dom_list += [domain]
 
     return_list = []
     for dom in dom_list:
@@ -289,36 +288,37 @@ if __name__ == "__main__":
 
     with open(ftp_filename, 'wb') as f:
         pickle.dump(handler, f)
-    
-    sh = spreadsheet_connector()
 
-    is_get_domain_ftp_server = True
-    if is_get_domain_ftp_server:
+    get_ftp_server(handler)
+    # sh = spreadsheet_connector()
+
+    # is_get_domain_ftp_server = True
+    # if is_get_domain_ftp_server:
         
-        dom_list = get_ftp_server(handler)
+    #     dom_list = get_ftp_server(handler)
 
-        dom_list.sort(key=lambda dom : dom[0])
-        # print(dom_list)
-        for dom in dom_list:
-            print("{}, {}".format(dom[0], dom[1]))
+    #     dom_list.sort(key=lambda dom : dom[0])
+    #     # print(dom_list)
+    #     for dom in dom_list:
+    #         print("{}, {}".format(dom[0], dom[1]))
 
-    is_get_domain_data_csv_list = False
-    if is_get_domain_data_csv_list:
-        while True:
-            domain = input("input domain name : ")
-            if domain == "q":
-                break
+    # is_get_domain_data_csv_list = False
+    # if is_get_domain_data_csv_list:
+    #     while True:
+    #         domain = input("input domain name : ")
+    #         if domain == "q":
+    #             break
     
-            domain_server = get_domain_ftp_server(handler, domain)
-            if domain_server[0] == None:
-                continue
+    #         domain_server = get_domain_ftp_server(handler, domain)
+    #         if domain_server[0] == None:
+    #             continue
             
-            rankingsite_list = get_domain_data_csv_list(handler, domain)
-            if  rankingsite_list == []:
-                print("no rankingsite")
-                continue
-            for f in rankingsite_list.sort():
-                print(f)
+    #         rankingsite_list = get_domain_data_csv_list(handler, domain)
+    #         if  rankingsite_list == []:
+    #             print("no rankingsite")
+    #             continue
+    #         for f in rankingsite_list.sort():
+    #             print(f)
 
     # check_domain_list(handler, sh)
 
